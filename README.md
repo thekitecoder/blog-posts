@@ -1,2 +1,2 @@
 # blog-posts
-Code repository regarding different topics from my site
+Code repository regarding different topics from my site.
