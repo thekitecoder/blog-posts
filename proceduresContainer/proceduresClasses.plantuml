@@ -1,0 +1,49 @@
+@startuml Sample
+hide empty members
+
+class ApplicationContext
+class ResourceDeleter
+{
+    ResourceDeleter(ID);
+    void start(Callback);
+}
+
+class ResourceDeletersContainer
+{
+    void startResourceDeletion(ID, Callback);
+    std::unordered_map<ID, ResourceDeleter> activeDeleters;
+}
+
+entity RemoteResourceOwner {
+    void handle(ResourceDeleteSignal);
+    void sendResourceDeletionAck();
+}
+
+class Handler{
+    void handle(DeleteEntitySignal);
+}
+
+class MessageDispatcher
+{
+    void registerForMsg(MsgId, Callback);
+    void queue(MsgId);
+    void handleMsgFromQueue();
+}
+
+ApplicationContext *-- ResourceDeletersContainer
+ApplicationContext *-- Handler
+ApplicationContext *-- MessageDispatcher
+
+ResourceDeletersContainer *-- ResourceDeleter
+
+Handler <-- ResourceDeletersContainer
+
+' ResourceDeleter <-- RemoteResourceOwner : Deletion Ack
+' RemoteResourceOwner <-- ResourceDeleter : ResourceDeleteSignal
+
+MessageDispatcher <-- Handler
+MessageDispatcher <-- ResourceDeleter
+MessageDispatcher <-- RemoteResourceOwner
+' MessageDispatcher -- Handler
+
+@enduml

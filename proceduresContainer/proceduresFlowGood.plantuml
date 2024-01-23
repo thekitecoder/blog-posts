@@ -1,0 +1,38 @@
+@startuml flowGood
+skinparam NoteTextAlignment center
+autonumber
+participant UserUI
+participant MsgDispatcher
+participant Handler
+
+participant ResourceDeletersContainer
+participant ResourceDeleter
+
+participant RemoteResourceOwner 
+
+ResourceDeletersContainer -> MsgDispatcher: Register for ResourceDeletionFinished\nas part of setup
+UserUI -> MsgDispatcher: DeleteEntity
+MsgDispatcher -> Handler: DeleteEntity
+Handler -> ResourceDeletersContainer: startDeletion\nCALLBACK passed
+note over ResourceDeletersContainer 
+Creates and stores ResourceDeleter. 
+RD_CALLBACK: CALLBACK() with added sending ResourceDeletionFinished
+end note
+ResourceDeletersContainer -> ResourceDeleter: start\npass RD_CALLBACK
+ResourceDeleter -> MsgDispatcher: Register for Ack with RD_CALLBACK
+ResourceDeleter -> MsgDispatcher: DeleteResource
+MsgDispatcher -> RemoteResourceOwner: DeleteResource
+note over MsgDispatcher, ResourceDeleter
+Callstack is unwiding to the msg dispatcher - waiting for messages
+Random time to Ack Deletion
+end note
+RemoteResourceOwner -> MsgDispatcher: Resource Deletion Ack
+MsgDispatcher -> ResourceDeleter: Executes registerd RD_CALLBACK
+ResourceDeleter -> Handler: Executes CALLBACK
+ResourceDeleter -> MsgDispatcher: Executes the added part: put ResourceDeletionFinished msg on the queue
+note over MsgDispatcher, ResourceDeleter
+Callstack is unwiding to the msg dispatcher - waiting for messages
+end note
+MsgDispatcher -> ResourceDeletersContainer: ResourceDeletionFinished - remove ResourceDeleter
+
+@enduml

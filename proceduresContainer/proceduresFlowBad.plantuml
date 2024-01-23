@@ -1,0 +1,40 @@
+@startuml flowBad
+skinparam NoteTextAlignment center
+autonumber
+participant UserUI
+participant MsgDispatcher
+participant Handler
+
+participant ResourceDeletersContainer
+participant ResourceDeleter
+
+participant RemoteResourceOwner 
+
+UserUI -> MsgDispatcher: DeleteEntity
+MsgDispatcher -> Handler: DeleteEntity
+Handler -> ResourceDeletersContainer: startDeletion\nCALLBACK passed
+note over ResourceDeletersContainer 
+Creates and stores ResourceDeleter. 
+RD_CALLBACK: CALLBACK() with added
+removing ResourceDeleter from container
+end note
+ResourceDeletersContainer -> ResourceDeleter: start\npass RD_CALLBACK
+ResourceDeleter -> MsgDispatcher: Register for Ack with RD_CALLBACK
+ResourceDeleter -> MsgDispatcher: DeleteResource
+MsgDispatcher -> RemoteResourceOwner: DeleteResource
+note over MsgDispatcher, ResourceDeleter
+Callstack is unwiding to the msg dispatcher - waiting for messages
+Random time to Ack Deletion
+end note
+RemoteResourceOwner -> MsgDispatcher: Resource Deletion Ack
+MsgDispatcher -> ResourceDeleter: Executes registerd RD_CALLBACK
+ResourceDeleter -> Handler: Executes CALLBACK
+ResourceDeleter -> ResourceDeletersContainer: Executes the added part that removes\nResourceDeleter from the container (SELF REMOVAL!)
+note over ResourceDeleter
+Resource deleter don't have the knowledge that
+it was deleted during the callback call.
+We're still in its context and can execute code,
+that might operate on deleted object.
+end note
+
+@enduml
